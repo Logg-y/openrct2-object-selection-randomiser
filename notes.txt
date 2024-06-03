@@ -1,0 +1,117 @@
+There's an index for each ObjectType
+Loading something new into that index WILL change objects present in the game world:
+	Paths: update existing
+	Rides: fails (null) if trying mismatched object types (eg trying to load a drink stall over a food stall, a stall over a ride...). If object selection UI is still open, it will return normal values but not work
+		Tracked rides: ride type doesn't change, but the vehicles on it WILL, which could be hilarious but also catastrophic
+		Flat rides: most flat rides seem to run on vehicles, this replaces the vehicle of the flat ride which will continue trying to operate on its old mode with hilarious results
+		Stalls: transforms existing stalls
+	Park entrances: replaces
+	Scenery: any item(s) present in the park remain loaded, but the rest of the group disappears. Oh, and whatever you replaced it with doesn't properly end up in the palette any more.
+	
+	
+-> I can't mess with scenery research sets because I can't seem to add them to the scenery palette.
+
+Researchables I can mess with:
+	Just rides/stalls.
+	
+Non research items that can be messed with:
+	Path bottom styles
+	Queue bottom styles
+	Path support styles
+	Benches
+	Lamps
+	Jumping fountains
+	Jumping snowballs
+	Bins
+	Park entrance styles
+	
+
+Main
+	Global source preference:
+		Scenario's default
+		Override
+	Global object type weights
+		Ride categories
+		Food stall
+		Drink stall
+		Other stall
+	
+	Initial discovery
+		Number of objects per type:
+			Scenario default
+			min(Scenario default, X)
+			Always exactly X
+		Object type weights:
+			Global
+			Scenario default
+			Custom
+		
+	Research:
+		Number of objects per type:
+			Scenario default
+			min(Scenario default, X)
+			Always exactly X
+		Object type weights:
+			Global
+			Scenario default
+			Custom
+			
+	Can be made researchable?
+		Trees
+		Shrubs
+		Gardens
+		Fences/Walls
+		Path attachments
+		
+Rides:
+	Enabled
+	Source preference:
+		Global
+		Override
+		Scenario's default
+	
+	Stalls: allow drop in replacement
+	Rides: allow drop in replacement [NEEDS WARNING]
+	
+	Stall availability: offer settings for each of these...
+		Food
+		Drink
+		Toilet
+		Umbrellas
+		Cash machine
+			Copy scenario's first availability
+			Always make available within X researches
+			Random!
+			
+	
+	Associations...
+	
+All these can use the same format
+	Path surface:
+	Path supports:
+	Benches:
+	Lamps:
+	Park entrance: (skip associations)
+		Enabled
+		Source preference:
+			Global
+			Override
+			Scenario's default
+			
+		Allow drop in replacement
+		Associations...
+
+Path attachments:
+	Queueline TV:
+	Jumping fountains:
+	Jumping snowballs:
+		Always enabled
+		Keep scenario default
+		Always % chance...
+		% chance if not available by default
+		
+---
+Notes on Associations:
+	Blacklist object
+	Object always comes with...
+	Object cannot coexist with...
