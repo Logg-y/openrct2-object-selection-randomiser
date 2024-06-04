@@ -1,8 +1,9 @@
+import { UISettings } from "./uisettings";
+import { StringTable } from "./util/strings";
+
 function onClickMenuItem()
 {
-	// Write code here that should happen when the player clicks the menu item under the map icon.
-
-	console.log("Hello world!");
+	UISettings();
 }
 
 
@@ -15,6 +16,6 @@ export function startup()
 	// Register a menu item under the map icon:
 	if (typeof ui !== "undefined")
 	{
-		ui.registerMenuItem("My plugin", () => onClickMenuItem());
+		ui.registerMenuItem(StringTable.PLUGIN_NAME, () => onClickMenuItem());
 	}
 }

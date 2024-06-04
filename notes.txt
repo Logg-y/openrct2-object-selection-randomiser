@@ -77,8 +77,8 @@ Rides:
 		Food
 		Drink
 		Toilet
-		Umbrellas
 		Cash machine
+		First aid stall
 			Copy scenario's first availability
 			Always make available within X researches
 			Random!
@@ -89,19 +89,28 @@ Rides:
 All these can use the same format
 	Path surface:
 	Path supports:
-	Benches:
-	Lamps:
 	Park entrance: (skip associations)
 		Enabled
 		Source preference:
 			Global
 			Override
 			Scenario's default
+		Number of types:
+			Keep scenario default
+			min(Scenario default, X) types
+			Always exactly X types
 			
 		Allow drop in replacement
 		Associations...
 
 Path attachments:
+	Source preference...
+	Bench
+	Lamp:
+	Bin
+		Keep scenario default
+		min(Scenario default, X) types
+		Always exactly X types
 	Queueline TV:
 	Jumping fountains:
 	Jumping snowballs:
@@ -115,3 +124,5 @@ Notes on Associations:
 	Blacklist object
 	Object always comes with...
 	Object cannot coexist with...
+	
+Rides are max 2047, most other things are max 255
