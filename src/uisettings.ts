@@ -1,10 +1,12 @@
-import { ObjectDistributionType, ObjectDistributionTypes } from "./objectdistribution";
-import { ConfigOptionNumber, getDynamicStore, getStaticStore } from "./sharedstorage";
-import { GameSourcesArray } from "./sourcepreference";
+import { QuantitySelectionPrefix } from "./numberofobjects";
+import { randomise } from "./mainworker";
+import { ConfigOptionNumber, getDynamicStore, getStaticStore, loadFromSharedStorage, saveToSharedStorage } from "./sharedstorage";
+import { GameSourcesArray, SourcePreferenceKey } from "./sourcepreference";
 import { pluginVersion } from "./util/pluginversion";
 import { StringTable, formatTokens } from "./util/strings";
-import { storedCheckbox, getNonpersistentStore, messageBox } from "./util/uiinclude";
+import { storedCheckbox, getNonpersistentStore, messageBox, yesNoBox } from "./util/uiinclude";
 import { tab, tabwindow, label, groupbox, horizontal, button, dropdown, twoway, SpinnerParams, TwoWayBinding, spinner, WritableStore, ElementVisibility, vertical } from "openrct2-flexui";
+import { RideObjectDistributionTypes, RideObjectDistributionType } from "./distributiontype";
 
 const SourceGameToPromptString: Record<ObjectSourceGame, string> =
 {
@@ -18,7 +20,7 @@ const SourceGameToPromptString: Record<ObjectSourceGame, string> =
     custom: StringTable.CUSTOM,
 };
 
-const ObjectDistributionTypeToPromptString: Record<ObjectDistributionType, string> =
+const ObjectDistributionTypeToPromptString: Record<RideObjectDistributionType, string> =
 {
     drinkstall: StringTable.DRINKSTALL_PROMPT,
     foodstall: StringTable.FOODSTALL_PROMPT,
@@ -39,6 +41,10 @@ interface SpinnerPlusSetterParams extends SpinnerParams
     prompt: string,
     width: number,
 }
+
+// Functions to call when the UI opens, allows fixing visibility based on the saved settings
+// which are not known when we create the structure
+let callOnLoadedStores: (()=>void)[] = [];
 
 export function spinnerPlusSetter(params: SpinnerPlusSetterParams)
 {
@@ -122,7 +128,7 @@ export function spinnerPlusSetter(params: SpinnerPlusSetterParams)
 
 interface SourcePreferenceWidgetParams
 {
-    storeprefix: string,
+    storeprefix: SourcePreferenceKey,
     objectTypeString: string,
     includeGlobal: boolean,
 }
@@ -142,7 +148,6 @@ function sourcePreferenceWidget(params: SourcePreferenceWidgetParams)
     }
     dropdownItems.push(StringTable.USE_MANUAL_OVERRIDE);
     let dropdownStore = getDynamicStore(params.storeprefix+"SourcePreferenceDropdown", 0);
-
     let children: WritableStore<ElementVisibility>[] = [];
     for (const game of GameSourcesArray)
     {
@@ -157,7 +162,7 @@ function sourcePreferenceWidget(params: SourcePreferenceWidgetParams)
             child.set(state);
         }
     }
-    dropdownChange(dropdownStore.get());
+    callOnLoadedStores.push(()=>dropdownChange(dropdownStore.get()));
     let content = [horizontal({
         content: [
             dropdown({
@@ -218,7 +223,7 @@ function sourcePreferenceWidget(params: SourcePreferenceWidgetParams)
 
 interface ObjectDistributionWidgetParams
 {
-    storeprefix: string,
+    storeprefix: "global",
     groupboxTitle: string,
     objectTypeString: string,
     includeGlobal: boolean,
@@ -240,7 +245,7 @@ function objectDistributionWidget(params: ObjectDistributionWidgetParams)
     let dropdownStore = getDynamicStore(params.storeprefix+"ObjectDistributionDropdown", 0);
 
     let children: WritableStore<ElementVisibility>[] = [];
-    for (const category of ObjectDistributionTypes)
+    for (const category of RideObjectDistributionTypes)
     {
         children.push(getNonpersistentStore<ElementVisibility>(params.storeprefix+"ObjectDistributionSpinnerDisabled"+category, "none"));
     }
@@ -253,7 +258,7 @@ function objectDistributionWidget(params: ObjectDistributionWidgetParams)
             child.set(state);
         }
     }
-    dropdownChange(dropdownStore.get());
+    callOnLoadedStores.push(()=>dropdownChange(dropdownStore.get()));
     let content = [horizontal({
             content: [
                 dropdown({
@@ -277,7 +282,7 @@ function objectDistributionWidget(params: ObjectDistributionWidgetParams)
             ]
     })];
     let spinners = [];
-    for (const category of ObjectDistributionTypes)
+    for (const category of RideObjectDistributionTypes)
     {
         spinners.push(spinnerPlusSetter({
             value: twoway(getDynamicStore(params.storeprefix+"ObjectDistributionWeight"+category, 5)),
@@ -316,7 +321,7 @@ function objectDistributionWidget(params: ObjectDistributionWidgetParams)
 
 interface QuantitySelectionWidgetParams
 {
-    storeprefix: string,
+    storeprefix: QuantitySelectionPrefix,
     prompt: string,
     defaultvalue: number,
 }
@@ -333,7 +338,7 @@ function quantitySelectionWidget(params: QuantitySelectionWidgetParams)
         let state: ElementVisibility = visible ? "visible" : "none";
         spinnerVisibilty.set(state);
     }
-    dropdownChange(dropdownStore.get());
+    callOnLoadedStores.push(()=>dropdownChange(dropdownStore.get()));
     let content = [horizontal({
             content: [
                 label({text: params.prompt}),
@@ -362,12 +367,12 @@ function quantitySelectionWidget(params: QuantitySelectionWidgetParams)
 const MainTab = [
     label({text:StringTable.TITLE_MAIN_SETTINGS}),
     sourcePreferenceWidget({
-        storeprefix:"Global", 
+        storeprefix:"global", 
         objectTypeString:"",
         includeGlobal:false
     }),
     objectDistributionWidget({
-        storeprefix:"Global",
+        storeprefix:"global",
         groupboxTitle:StringTable.OBJECT_DISTRIBUTION_GLOBAL,
         objectTypeString:"",
         includeGlobal:false
@@ -385,6 +390,17 @@ const MainTab = [
         includeGlobal:true,
     }),
     */
+    
+    button(
+    {
+        text:StringTable.RUN,
+        onClick: ()=>
+        {
+            randomise();
+        },
+        height:30,
+    }
+   )
 ]
 
 const ResearchTab = [
@@ -488,7 +504,7 @@ const RidesTab = [
         defaultvalue: 1
     }),
     sourcePreferenceWidget({
-        storeprefix:"Ride", 
+        storeprefix:"ride", 
         objectTypeString:StringTable.RIDES_STALLS,
         includeGlobal:true
     }),
@@ -496,7 +512,7 @@ const RidesTab = [
         storekey: "RideReplaceExistingObjects",
         prompt: StringTable.REPLACE_RIDES,
         tooltip: StringTable.REPLACE_OBJECT_TOOLTIP,
-        defaultvalue: 1
+        defaultvalue: 0
     }),
     storedCheckbox({
         storekey: "StallReplaceExistingObjects",
@@ -531,6 +547,45 @@ const RidesTab = [
     }),
 ]
 
+
+const SaveLoadTab = [
+	label({
+		text: StringTable.TITLE_SAVE_LOAD_SETTINGS,
+	}),
+	horizontal([
+		button({
+			text: StringTable.SAVE,
+			height: 20,
+			onClick: () => {
+				yesNoBox(
+					{
+						text: StringTable.ARE_YOU_SURE_SAVE,
+						yesbuttontext: StringTable.OK,
+						nobuttontext: StringTable.CANCEL,
+						title: StringTable.SAVE,
+						yesCallback: saveToSharedStorage,
+					}
+				)
+			}
+		}),	
+		button({
+			text: StringTable.LOAD,
+			height: 20,
+			onClick: () => {
+				yesNoBox(
+					{
+						text: StringTable.ARE_YOU_SURE_LOAD,
+						yesbuttontext: StringTable.OK,
+						nobuttontext: StringTable.CANCEL,
+						title: StringTable.LOAD,
+						yesCallback: loadFromSharedStorage,
+					}
+				)
+			}
+		}),	
+	])
+]
+
 const tabImageGears: ImageAnimation =
 {
     frameBase: 5201,
@@ -552,6 +607,15 @@ const tabImageRides: ImageAnimation =
     frameDuration: 3,
 }
 
+const tabImageSaveLoad: ImageAnimation =
+{
+	frameBase: 5183,
+	frameCount: 1,
+	frameDuration: 1,
+	offset: { x: 3, y: 1 }
+}
+
+
 const FootpathSurfaceTab = [
     label({text:StringTable.TITLE_FOOTPATH_SURFACE_SETTINGS}),
     storedCheckbox({
@@ -561,7 +625,7 @@ const FootpathSurfaceTab = [
         defaultvalue: 1
     }),
     sourcePreferenceWidget({
-        storeprefix:"PathSurface", 
+        storeprefix:"footpath_surface", 
         objectTypeString:StringTable.PATH_SURFACES,
         includeGlobal:true
     }),
@@ -592,7 +656,7 @@ const FootpathSupportsTab = [
         defaultvalue: 1
     }),
     sourcePreferenceWidget({
-        storeprefix:"PathSupport", 
+        storeprefix:"footpath_railings", 
         objectTypeString:StringTable.PATH_SUPPORTS,
         includeGlobal:true
     }),
@@ -618,7 +682,7 @@ const ParkEntranceTab = [
         defaultvalue: 1
     }),
     sourcePreferenceWidget({
-        storeprefix:"ParkEntrance", 
+        storeprefix:"park_entrance", 
         objectTypeString:StringTable.PARK_ENTRANCES,
         includeGlobal:true
     }),
@@ -769,10 +833,26 @@ const UISettingsTemplate = tabwindow(
             height: "auto",
             content: PathAttachmentTab,
         }),
-   ]
+        tab({
+            image: tabImageSaveLoad,
+            height: "auto",
+            content: SaveLoadTab,
+        }),
+   ],
 });
+
+let haveLoadedSettingsThisSession = false;
 
 export function UISettings()
 {
+    if (!haveLoadedSettingsThisSession)
+    {
+        loadFromSharedStorage();
+        haveLoadedSettingsThisSession = true;
+        for (const func of callOnLoadedStores)
+        {
+            func();
+        }
+    }
     UISettingsTemplate.open();
 }
