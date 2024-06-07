@@ -5,7 +5,7 @@ import { calculateAllSourcePreferences, clearSourcePreferences } from "./sourcep
 import { log } from "./util/log";
 import { StringTable } from "./util/strings";
 import { calculateRemainingObjects } from "./numberofobjects";
-import { loadRandomObjects } from "./objectrandomiser";
+import { loadRandomObjects, handleAssociationsForObjectsInPark } from "./objectrandomiser";
 
 interface RandomiserStage
 {
@@ -38,6 +38,10 @@ const RandomiserStages: RandomiserStage[] = [
     {
         name: "findForbiddenIndexes",
         callable: findForbiddenIndexes,
+    },
+    {
+        name:"handleAssociationsForObjectsInPark",
+        callable: handleAssociationsForObjectsInPark
     },
     {
         name:"calcNumObjects",

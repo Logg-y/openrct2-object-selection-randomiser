@@ -4,13 +4,14 @@ const QUEUE_LINE_TV_IDENTIFIER = "rct2.footpath_item.qtv1";
 const CASH_MACHINE_IDENTIFIER = "rct2.ride.atm1";
 
 import { NonRideObjectDistributionType, ObjectDistributionType, ObjectDistributionTypeToAPIObjectType, ObjectPoolByDistributionType, RideObjectDistributionType, getDistributionTypeForObject } from "./distributiontype";
-import { forbiddenIndexes, preferentialIndexQueue } from "./forbiddenindexes";
+import { forbiddenIndexes, indexesPresentInWorld, preferentialIndexQueue } from "./forbiddenindexes";
 import { NonRideObjectsRequired, RideObjectsRequired, remainingItems } from "./numberofobjects";
-import { ObjectIdentifierToInstalledObject, SupportedObjectType } from "./objectlist";
+import { ObjectIdentifierToInstalledObject, SupportedObjectType, SupportedObjectTypes } from "./objectlist";
 import { log } from "./util/log";
 import { StringTable, formatTokens } from "./util/strings";
 import { setErrorState } from "./util/errorhandler";
 import { pickRandomIdentifierRespectingSourcePreferences } from "./sourcepreference";
+import { ObjectAssociations } from "./objectassociation";
 
 const MAX_LOADS_PER_TICK = 2;
 
@@ -77,6 +78,7 @@ function tryToLoadObject(identifier: string, index: number | undefined)
         }
     }
     forbiddenIndexes[apiObjectType as SupportedObjectType].push(loadReturn.index);
+    handleAssociationsOnLoadingIdentifier(identifier);
     return true;
 }
 
@@ -178,6 +180,70 @@ export function loadRandomObjects()
         if (!loadRides(remainingItems.invented, true)) { return false; }
         if (!loadRides(remainingItems.uninvented, false)) { return false; }
         if (!loadNonRides(remainingItems.nonResearcheable)) { return false; }
+    }
+    return true;
+}
+
+function removeCannotCoexistWithObjects(ident: string)
+{
+    let association = ObjectAssociations[ident];
+    if (association != undefined)
+    {
+        for (const forbiddenIdent in association.cannotCoexistWith)
+        {
+            let forbiddenData = ObjectIdentifierToInstalledObject[forbiddenIdent];
+            let forbiddenDistType = getDistributionTypeForObject(forbiddenData);
+            if (forbiddenDistType !== null)
+            {
+                let indexOfForbiddenIdent = ObjectPoolByDistributionType[forbiddenDistType].indexOf(forbiddenIdent);
+                if (indexOfForbiddenIdent > -1)
+                {
+                    ObjectPoolByDistributionType[forbiddenDistType].splice(indexOfForbiddenIdent, 1);
+                    log(`Removed ${forbiddenIdent} from pool for ${forbiddenDistType}: is forbidden by object ${ident}`, "info");
+                }
+            }
+        }
+    }
+}
+
+function loadAlwaysComesWithObjects(ident: string)
+{
+    let association = ObjectAssociations[ident];
+    if (association != undefined)
+    {
+        for (const alwaysComesWithIdent in association.alwaysComesWith)
+        {
+            let alwaysComesWithData = ObjectIdentifierToInstalledObject[alwaysComesWithIdent];
+            let alwaysComesWithDistType = getDistributionTypeForObject(alwaysComesWithData);
+            if (alwaysComesWithDistType !== null)
+            {
+                let indexOfAlwaysComesWithData = ObjectPoolByDistributionType[alwaysComesWithDistType].indexOf(alwaysComesWithIdent);
+                if (indexOfAlwaysComesWithData > -1)
+                {
+                    let targetIndex = findIndexToLoadObjectOver(alwaysComesWithDistType);
+                    log(`Try to load ${alwaysComesWithIdent} as a ${alwaysComesWithDistType}: ${ident} wants to always come with it, and it's not loaded yet`, "info");
+                    tryToLoadObject(alwaysComesWithData.identifier, targetIndex);
+                }
+            }
+        }
+    }
+}
+
+function handleAssociationsOnLoadingIdentifier(identifier: string)
+{
+    removeCannotCoexistWithObjects(identifier);
+    loadAlwaysComesWithObjects(identifier);
+}
+
+export function handleAssociationsForObjectsInPark()
+{
+    for (const objType of SupportedObjectTypes)
+    {
+        for (const index of indexesPresentInWorld[objType])
+        {
+            let obj = objectManager.getObject(objType, index);
+            handleAssociationsOnLoadingIdentifier(obj.identifier);
+        }
     }
     return true;
 }

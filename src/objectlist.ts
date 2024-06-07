@@ -1,9 +1,6 @@
 /*
     Maintain various lists of available objects that are needed for everything else to stand a chance of working.
 */
-
-import { ObjectAssociations } from "./objectassociation";
-
 export const SupportedObjectTypes = ["ride", "footpath_addition", "footpath_surface", "footpath_railings", "park_entrance"] as const;
 export type SupportedObjectType = typeof SupportedObjectTypes[number];
 
@@ -30,15 +27,7 @@ export function listAvailableObjects()
     let listForThisIteration = listAvailableObjectsWorkingList.splice(0, MAX_ITERATIONS);
     for (const obj of listForThisIteration)
     {
-        let association = ObjectAssociations[obj.identifier];
-        if (association === undefined || !association.blacklisted)
-        {
-            // This is seemingly the closest I can get to a deepcopy without a polyfill
-            // A shallow copy is not enough, because InstalledObject.sourceGames remains a reference to the original
-            // ... which is destroyed for objects that are initially loaded the moment we unload them
-            //ObjectIdentifierToInstalledObject[obj.identifier] = JSON.parse(JSON.stringify(obj));
-            ObjectIdentifierToInstalledObject[obj.identifier] = Object.create(obj);
-        }
+        ObjectIdentifierToInstalledObject[obj.identifier] = Object.create(obj);
     }
     if (listAvailableObjectsWorkingList.length == 0)
     {

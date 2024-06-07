@@ -8,6 +8,7 @@
 */
 
 import { ObjectIdentifierToInstalledObject } from "./objectlist";
+import { PregeneratedIdentifierToRideResearchCategory } from "./standardobjectlist";
 import { log } from "./util/log";
 
 export const RideObjectDistributionTypes = ["transport", "gentle", "thrill", "water", "rollercoaster", "foodstall", "drinkstall", "otherstall"] as const;
@@ -122,22 +123,30 @@ export const ObjectDistributionTypeToAPIObjectType: Record<ObjectDistributionTyp
     water:"ride",
 } as const;
 
+let objectsLoadedThisTick = 0;
+
 export function loadDistributionTypesForAllRides()
 {
+    objectsLoadedThisTick = 0;
     if (loadDistributionTypesWorkingList.length == 0)
     {
         loadDistributionTypesWorkingList = Object.keys(ObjectIdentifierToInstalledObject);
     }
-    let listForThisTick = loadDistributionTypesWorkingList.splice(0, RIDE_DISTRIBUTION_TYPES_TO_CHECK_PER_TICK);
-    for (const ident of listForThisTick)
+    while (true)
     {
+        let ident = loadDistributionTypesWorkingList.pop();
+        if (ident == undefined) break;
         let obj = ObjectIdentifierToInstalledObject[ident];
         if (obj.type == "ride")
         {
             getDistributionTypeForRide(obj);
         }
+        if (objectsLoadedThisTick > RIDE_DISTRIBUTION_TYPES_TO_CHECK_PER_TICK)
+        {
+            log(`Load ride distribution types: ${loadDistributionTypesWorkingList.length} items left`, "info");
+            return false;
+        }
     }
-    log(`Load ride distribution types: ${loadDistributionTypesWorkingList.length} items left`, "info");
     return loadDistributionTypesWorkingList.length == 0;
 }
 
@@ -230,6 +239,16 @@ export function getDistributionTypeForRide(obj: InstalledObject): RideObjectDist
     {
         return ObjectIdentifierToRideDistributionType[obj.identifier];
     }
+    // Shops still need to check the sold item category
+    // I could pregen this as well, but just getting all the non-stall rides out of the way makes this take so little time that it doesn't seem hugely worth it
+    let pregeneratedCategory = PregeneratedIdentifierToRideResearchCategory[obj.identifier];
+    if (pregeneratedCategory !== undefined && pregeneratedCategory != "shop")
+    {
+        ObjectIdentifierToRideDistributionType[obj.identifier] = pregeneratedCategory;
+        return pregeneratedCategory;
+    }
+    log(`Loading ${obj.identifier} to get its research item type...`, "info");
+    objectsLoadedThisTick++;
     let loadReturn = objectManager.load(obj.identifier);
     if (loadReturn === null)
     {

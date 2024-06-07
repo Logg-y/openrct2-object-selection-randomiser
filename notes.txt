@@ -126,3 +126,12 @@ Notes on Associations:
 	Object cannot coexist with...
 	
 Rides are max 2047, most other things are max 255
+
+Associations:
+	Blacklist legacy objects
+	Path: for objects with both stair/slope variants, will force all to be one type
+	Path: for objects with both round/square variants, will force all to be one type
+	Path: no invisible objects
+	Path: disallow road because you can't build with it
+	Ride: prevent classic and RCT2 versions of the same ride coexisting
+	
