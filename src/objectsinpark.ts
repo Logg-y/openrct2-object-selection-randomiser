@@ -76,6 +76,8 @@ export function clearForbiddenIndexes()
         park_entrance:[]
     };
     loadedIdentifiers = [];
+    mapX = 0;
+    mapY = 0;
 }
 
 let mapX = 0;
