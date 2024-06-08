@@ -5,7 +5,7 @@ Handle manipulations of the research queue.
 import { RideTypeToStallIdentifiers, getDistributionTypeForRide } from "./distributiontypepools";
 import { ObjectIdentifierToInstalledObject } from "./installedobjectlist";
 import { handleUnloadingIdentifier, tryToLoadObject } from "./objectloadunload";
-import { indexesPresentInWorld, loadedIdentifiers } from "./objectsinpark";
+import { indexesPresentInWorld } from "./objectsinpark";
 import { ConfigOptionNumber, getStaticStore } from "./sharedstorage";
 import { pickRandomIdentifierRespectingSourcePreferences } from "./sourcepreference";
 import { setErrorState } from "./util/errorhandler";
@@ -242,6 +242,83 @@ function fixCollidingStrictRequirements(timeConstraints: StallAvailabilities): R
     return strictRequestTimes;
 }
 
+function introduceNewStallOfType(stallType: StallType)
+{
+    // This means introducing a new stall
+    let identifier: string | undefined = undefined;
+    if (stallType == "foodstall" || stallType == "drinkstall")
+    {
+        identifier = pickRandomIdentifierRespectingSourcePreferences(stallType);
+    }
+    else
+    {
+        let rideType: number | undefined = undefined;
+        if (stallType == "cash_machine") rideType = CASH_MACHINE_RIDE_TYPE; 
+        else if (stallType == "first_aid") rideType = FIRST_AID_STALL_RIDE_TYPE; 
+        else if (stallType == "toilets") rideType = TOILET_RIDE_TYPE;
+        if (rideType !== undefined)
+        {
+            identifier = RideTypeToStallIdentifiers[rideType][context.getRandom(0, RideTypeToStallIdentifiers[rideType].length)];
+        }
+    }
+    if (identifier === undefined)
+    {
+        log(`Could not find a stall of type ${stallType} to load to meet requested timespan`, "error");
+    }
+    // This can mess up a lot of things. If nothing else, we don't know the current time of the new stall we just added
+    // and it could have cascading impact on others once moved, so start again
+    else
+    {
+        log(`load ${identifier} to satisfy demand for stall type ${stallType}`, "stallresearch");
+        tryToLoadObject(identifier, undefined, false);
+        return true;
+    }
+    return false;
+}
+
+function unloadAllStallsOfType(stallType: StallType)
+{
+    let identsToUnload: string[] = [];
+    let indexesToRemoveResearchFor: number[] = [];
+    let searchList = park.research.uninventedItems.concat(park.research.inventedItems);
+    for (const researchItem of searchList)
+    {
+        if (researchItem.type == "ride")
+        {
+            if (researchItem.category == "shop")
+            {
+                let thisIdent = objectManager.getObject("ride", researchItem.object).identifier;
+                let thisObjStallType = getStallTypeForIdentifier(thisIdent);
+                if (thisObjStallType == stallType)
+                {
+                    if (indexesPresentInWorld["ride"].indexOf(researchItem.object) == -1)
+                    {
+                        identsToUnload.push(thisIdent);
+                        indexesToRemoveResearchFor.push(researchItem.object);
+                    }
+                    else
+                    {
+                        log(`Wanted to unload ${thisIdent} so that no ${stallType}-s are available, but it is in the world already`, "info");
+                    }
+                }
+            }
+        }
+    }
+    if (identsToUnload.length > 0)
+    {
+        for (const ident of identsToUnload)
+        {
+            log(`Unload ${ident}: stall availability requests that no ${stallType}-s are available`, "info");
+            objectManager.unload(ident);
+            handleUnloadingIdentifier(ident);
+        }
+        park.research.inventedItems = park.research.inventedItems.filter((item) => (item.type !== "ride" || item.category !== "shop" || indexesToRemoveResearchFor.indexOf(item.object) == -1));
+        park.research.uninventedItems = park.research.uninventedItems.filter((item) => (item.type !== "ride" || item.category !== "shop" || indexesToRemoveResearchFor.indexOf(item.object) == -1));
+        return true
+    }
+    return false;
+}
+
 export function processResearchQueue()
 {
     let temp = park.research.uninventedItems;
@@ -271,41 +348,20 @@ export function processResearchQueue()
             {
                 if (current.time === undefined)
                 {
-                    // This means introducing a new stall
-                    let identifier: string | undefined = undefined;
-                    if (stallType == "foodstall" || stallType == "drinkstall")
+                    restartLoop = introduceNewStallOfType(stallType)
+                    // If we fail, don't try this again
+                    if (!restartLoop)
                     {
-                        identifier = pickRandomIdentifierRespectingSourcePreferences(stallType);
-                    }
-                    else
-                    {
-                        let rideType: number | undefined = undefined;
-                        if (stallType == "cash_machine") rideType = CASH_MACHINE_RIDE_TYPE; 
-                        else if (stallType == "first_aid") rideType = FIRST_AID_STALL_RIDE_TYPE; 
-                        else if (stallType == "toilets") rideType = TOILET_RIDE_TYPE;
-                        if (rideType !== undefined)
-                        {
-                            identifier = RideTypeToStallIdentifiers[rideType][context.getRandom(0, RideTypeToStallIdentifiers[rideType].length)];
-                        }
-                    }
-                    if (identifier === undefined)
-                    {
-                        log(`Could not find a stall of type ${stallType} to load to meet requested timespan`, "error");
                         timeConstraints[stallType].time = undefined;
+                        timeConstraints[stallType].strict = false;
                     }
-                    // This can mess up a lot of things. If nothing else, we don't know the current time of the new stall we just added
-                    // and it could have cascading impact on others once moved, so start again
                     else
                     {
-                        log(`load ${identifier} to satisfy demand for stall type ${stallType}`, "stallresearch");
-                        tryToLoadObject(identifier, undefined, false);
-                        restartLoop = true;
+                        break;
                     }
-                    break;
                 }
                 else
                 {
-                    log(`adjustStallResearchTime`, "stallresearch");
                     if (adjustStallResearchTime(stallType, current, required, strictRequestTimes))
                     {
                         restartLoop = true;
@@ -318,42 +374,8 @@ export function processResearchQueue()
                 // Strict + time==undefined means this stall type isn't allowed at all
                 if (current.time !== undefined)
                 {
-                    let identsToUnload: string[] = [];
-                    let indexesToRemoveResearchFor: number[] = [];
-                    let searchList = park.research.uninventedItems.concat(park.research.inventedItems);
-                    for (const researchItem of searchList)
+                    if (unloadAllStallsOfType(stallType))
                     {
-                        if (researchItem.type == "ride")
-                        {
-                            if (researchItem.category == "shop")
-                            {
-                                let thisIdent = objectManager.getObject("ride", researchItem.object).identifier;
-                                let thisObjStallType = getStallTypeForIdentifier(thisIdent);
-                                if (thisObjStallType == stallType)
-                                {
-                                    if (indexesPresentInWorld["ride"].indexOf(researchItem.object) == -1)
-                                    {
-                                        identsToUnload.push(thisIdent);
-                                        indexesToRemoveResearchFor.push(researchItem.object);
-                                    }
-                                    else
-                                    {
-                                        log(`Wanted to unload ${thisIdent} so that no ${stallType}-s are available, but it is in the world already`, "info");
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (identsToUnload.length > 0)
-                    {
-                        for (const ident of identsToUnload)
-                        {
-                            log(`Unload ${ident}: stall availability requests that no ${stallType}-s are available`, "info");
-                            objectManager.unload(ident);
-                            handleUnloadingIdentifier(ident);
-                        }
-                        park.research.inventedItems = park.research.inventedItems.filter((item) => (item.type !== "ride" || item.category !== "shop" || indexesToRemoveResearchFor.indexOf(item.object) == -1));
-                        park.research.uninventedItems = park.research.uninventedItems.filter((item) => (item.type !== "ride" || item.category !== "shop" || indexesToRemoveResearchFor.indexOf(item.object) == -1));
                         restartLoop = true;
                         break;
                     }
