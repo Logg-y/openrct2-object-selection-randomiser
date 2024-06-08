@@ -29,6 +29,12 @@ const boolOptions =
     "PathSurfaceReplaceExistingObjects",
     "PathSupportsReplaceExistingObjects",
     "PathAttachmentsReplaceExistingObjects",
+    "AssociationRuleBlacklistCompatibilityObjects",
+    "AssociationRulePreventPathStairAndSlopeVariants",
+    "AssociationRulePreventPathSquareAndRoundedVariants",
+    "AssociationRuleBlacklistInvisiblePath",
+    "AssociationRuleBlacklistEditorOnlyPath",
+    "AssociationRulePreventRideAndVehicleClassicDuplication",
     
 ] as const;
 const numberOptions =

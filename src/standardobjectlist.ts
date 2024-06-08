@@ -1,68 +1,66 @@
 // This file was generated automatically, see tools/parseObjectLists.py
-export type SlopedOrStairs = "sloped" | "stairs";
-export type RoundedOrSquare = "rounded" | "square";
 
 
-export const IdentifierIsCompatibilityObject: Record<string, boolean> = 
-{
-"rct1.ride.bobsleigh_trains":true,
-"rct1.ride.bumper_boats":true,
-"rct1.ride.cat_cars":true,
-"rct1.ride.chairlift_cars":true,
-"rct1.ride.dinghies":true,
-"rct1.ride.dodgems":true,
-"rct1.ride.fruity_ices_stall":true,
-"rct1.ride.horses":true,
-"rct1.ride.logs":true,
-"rct1.ride.mine_cars":true,
-"rct1.ride.mine_trains":true,
-"rct1.ride.motorbikes":true,
-"rct1.ride.mouse_cars":true,
-"rct1.ride.pickup_trucks":true,
-"rct1.ride.racing_cars":true,
-"rct1.ride.reverse_freefall_car":true,
-"rct1.ride.river_rapids_boats":true,
-"rct1.ride.small_monorail_cars":true,
-"rct1.ride.sports_cars":true,
-"rct1.ride.steam_trains":true,
-"rct1.ride.steel_rc_trains_reversed":true,
-"rct1.ride.streamlined_monorail_trains":true,
-"rct1.ride.suspended_swinging_aeroplane_cars":true,
-"rct1.ride.suspended_swinging_cars":true,
-"rct1.ride.swinging_lay_down_cars":true,
-"rct1.ride.vertical_drop_trains":true,
-"rct1.ride.wooden_rc_trains_reversed":true,
-"rct1aa.ride.bicycles":true,
-"rct1aa.ride.floorless_twister_trains":true,
-"rct1aa.ride.flying_saucers":true,
-"rct1aa.ride.ghost_train_cars":true,
-"rct1aa.ride.heartline_twister_cars":true,
-"rct1aa.ride.hyper_twister_trains":true,
-"rct1aa.ride.mini_helicopters":true,
-"rct1aa.ride.reverser_cars":true,
-"rct1aa.ride.side_friction_cars":true,
-"rct1aa.ride.ski_lift_cars":true,
-"rct1aa.ride.splash_boats":true,
-"rct1aa.ride.stand_up_twister_trains":true,
-"rct1aa.ride.steam_trains_covered":true,
-"rct1aa.ride.steel_wild_mouse_cars":true,
-"rct1aa.ride.suspended_monorail_trains":true,
-"rct1aa.ride.twister_trains":true,
-"rct1aa.ride.vintage_cars":true,
-"rct1aa.ride.virginia_reel_tubs":true,
-"rct1ll.ride.4_across_inverted_trains":true,
-"rct1ll.ride.air_powered_trains":true,
-"rct1ll.ride.coaster_boats":true,
-"rct1ll.ride.face_off_cars":true,
-"rct1ll.ride.hypercoaster_trains":true,
-"rct1ll.ride.inverted_hairpin_cars":true,
-"rct1ll.ride.jet_skis":true,
-"rct1ll.ride.rafts":true,
-"rct1ll.ride.steam_trains_american":true,
-"rct2.footpath_surface.road":true,
-"rct2.ride.ptct2r":true,
-"rct2.ride.utcarr":true
-} as const;
+export const CompatibilityObjectIdentifiers: string[] = 
+[
+"rct1.ride.bobsleigh_trains",
+"rct1.ride.bumper_boats",
+"rct1.ride.cat_cars",
+"rct1.ride.chairlift_cars",
+"rct1.ride.dinghies",
+"rct1.ride.dodgems",
+"rct1.ride.fruity_ices_stall",
+"rct1.ride.horses",
+"rct1.ride.logs",
+"rct1.ride.mine_cars",
+"rct1.ride.mine_trains",
+"rct1.ride.motorbikes",
+"rct1.ride.mouse_cars",
+"rct1.ride.pickup_trucks",
+"rct1.ride.racing_cars",
+"rct1.ride.reverse_freefall_car",
+"rct1.ride.river_rapids_boats",
+"rct1.ride.small_monorail_cars",
+"rct1.ride.sports_cars",
+"rct1.ride.steam_trains",
+"rct1.ride.steel_rc_trains_reversed",
+"rct1.ride.streamlined_monorail_trains",
+"rct1.ride.suspended_swinging_aeroplane_cars",
+"rct1.ride.suspended_swinging_cars",
+"rct1.ride.swinging_lay_down_cars",
+"rct1.ride.vertical_drop_trains",
+"rct1.ride.wooden_rc_trains_reversed",
+"rct1aa.ride.bicycles",
+"rct1aa.ride.floorless_twister_trains",
+"rct1aa.ride.flying_saucers",
+"rct1aa.ride.ghost_train_cars",
+"rct1aa.ride.heartline_twister_cars",
+"rct1aa.ride.hyper_twister_trains",
+"rct1aa.ride.mini_helicopters",
+"rct1aa.ride.reverser_cars",
+"rct1aa.ride.side_friction_cars",
+"rct1aa.ride.ski_lift_cars",
+"rct1aa.ride.splash_boats",
+"rct1aa.ride.stand_up_twister_trains",
+"rct1aa.ride.steam_trains_covered",
+"rct1aa.ride.steel_wild_mouse_cars",
+"rct1aa.ride.suspended_monorail_trains",
+"rct1aa.ride.twister_trains",
+"rct1aa.ride.vintage_cars",
+"rct1aa.ride.virginia_reel_tubs",
+"rct1ll.ride.4_across_inverted_trains",
+"rct1ll.ride.air_powered_trains",
+"rct1ll.ride.coaster_boats",
+"rct1ll.ride.face_off_cars",
+"rct1ll.ride.hypercoaster_trains",
+"rct1ll.ride.inverted_hairpin_cars",
+"rct1ll.ride.jet_skis",
+"rct1ll.ride.rafts",
+"rct1ll.ride.steam_trains_american",
+"rct2.footpath_surface.road",
+"rct2.ride.ptct2r",
+"rct2.ride.utcarr"
+] as const;
 
 export const PregeneratedIdentifierToRideResearchCategory: Record<string, RideResearchCategory> = 
 {
@@ -404,41 +402,90 @@ export const PregeneratedIdentifierToRideResearchCategory: Record<string, RideRe
 "rct2ww.ride.whicgrub":"rollercoaster"
 } as const;
 
-export const IdentifierToSlopedOrStairs: Record<string, SlopedOrStairs> = 
+export const PathIdentifiersWithSlopedAndStairVariants: Record<string, string> = 
 {
-"rct1.footpath_surface.crazy_paving":"sloped",
-"rct1.footpath_surface.queue_blue":"sloped",
-"rct1.footpath_surface.tarmac":"sloped",
-"rct1aa.footpath_surface.queue_red":"sloped",
-"rct1aa.footpath_surface.queue_yellow":"sloped",
-"rct1aa.footpath_surface.tarmac_brown":"sloped",
-"rct1aa.footpath_surface.tarmac_red":"sloped",
-"rct2.footpath_surface.crazy_paving":"stairs",
-"rct2.footpath_surface.queue_blue":"stairs",
-"rct2.footpath_surface.queue_red":"stairs",
-"rct2.footpath_surface.queue_yellow":"stairs",
-"rct2.footpath_surface.tarmac":"stairs",
-"rct2.footpath_surface.tarmac_brown":"stairs",
-"rct2.footpath_surface.tarmac_red":"stairs"
+"rct2.footpath_surface.crazy_paving":"rct1.footpath_surface.crazy_paving",
+"rct2.footpath_surface.queue_blue":"rct1.footpath_surface.queue_blue",
+"rct2.footpath_surface.queue_red":"rct1aa.footpath_surface.queue_red",
+"rct2.footpath_surface.queue_yellow":"rct1aa.footpath_surface.queue_yellow",
+"rct2.footpath_surface.tarmac":"rct1.footpath_surface.tarmac",
+"rct2.footpath_surface.tarmac_brown":"rct1aa.footpath_surface.tarmac_brown",
+"rct2.footpath_surface.tarmac_red":"rct1aa.footpath_surface.tarmac_red"
 } as const;
 
-export const IdentifierToRoundedOrSquare: Record<string, RoundedOrSquare> = 
+export const PathIdentifiersWithRoundedAndSquareVariants: Record<string, string> = 
 {
-"rct1.footpath_surface.dirt":"square",
-"rct1aa.footpath_surface.ash":"square",
-"rct2.footpath_surface.ash":"rounded",
-"rct2.footpath_surface.dirt":"rounded"
+"rct2.footpath_surface.ash":"rct1aa.footpath_surface.ash",
+"rct2.footpath_surface.dirt":"rct1.footpath_surface.dirt"
 } as const;
 
-export const IdentifierToInvisibleFootpath: Record<string, boolean> = 
-{
-"openrct2.footpath_surface.invisible":true,
-"openrct2.footpath_surface.queue_invisible":true
-} as const;
+export const InvisibleFootpathIdentifiers: string[] = 
+[
+"openrct2.footpath_surface.invisible",
+"openrct2.footpath_surface.queue_invisible",
+"openrct2.footpath_railings.invisible"
+] as const;
 
-export const IdentifierIsEditorOnlyPath: Record<string, boolean> = 
+export const EditorOnlyPathIdentifiers: string[] = 
+[
+"rct1.footpath_surface.road",
+"rct2.footpath_surface.road"
+] as const;
+
+export const CompatibilityObjectToReplacement: Record<string, string> = 
 {
-"rct1.footpath_surface.road":true,
-"rct2.footpath_surface.road":true
+"rct2.footpath_surface.road":"rct1.footpath_surface.road",
+"rct2.ride.aml1":"rct1ll.ride.steam_trains_american",
+"rct2.ride.amt1":"rct1.ride.mine_trains",
+"rct2.ride.arrsw1":"rct1.ride.suspended_swinging_cars",
+"rct2.ride.arrsw2":"rct1.ride.suspended_swinging_aeroplane_cars",
+"rct2.ride.arrt2":"rct1ll.ride.hypercoaster_trains",
+"rct2.ride.bboat":"rct1.ride.bumper_boats",
+"rct2.ride.bmfl":"rct1aa.ride.floorless_twister_trains",
+"rct2.ride.bmrb":"rct1aa.ride.hyper_twister_trains",
+"rct2.ride.bmsd":"rct1aa.ride.twister_trains",
+"rct2.ride.bmsu":"rct1aa.ride.stand_up_twister_trains",
+"rct2.ride.bmvd":"rct1.ride.vertical_drop_trains",
+"rct2.ride.bob1":"rct1.ride.bobsleigh_trains",
+"rct2.ride.clift1":"rct1.ride.chairlift_cars",
+"rct2.ride.clift2":"rct1aa.ride.ski_lift_cars",
+"rct2.ride.cstboat":"rct1ll.ride.coaster_boats",
+"rct2.ride.ctcar":"rct1.ride.cat_cars",
+"rct2.ride.ding1":"rct1.ride.dinghies",
+"rct2.ride.dodg1":"rct1.ride.dodgems",
+"rct2.ride.fsauc":"rct1aa.ride.flying_saucers",
+"rct2.ride.gtc":"rct1aa.ride.ghost_train_cars",
+"rct2.ride.helicar":"rct1aa.ride.mini_helicopters",
+"rct2.ride.icecr1":"rct1.ride.fruity_ices_stall",
+"rct2.ride.ivmc1":"rct1ll.ride.inverted_hairpin_cars",
+"rct2.ride.jski":"rct1ll.ride.jet_skis",
+"rct2.ride.lfb1":"rct1.ride.logs",
+"rct2.ride.monbk":"rct1aa.ride.bicycles",
+"rct2.ride.mono1":"rct1.ride.streamlined_monorail_trains",
+"rct2.ride.mono2":"rct1.ride.small_monorail_cars",
+"rct2.ride.nemt":"rct1ll.ride.4_across_inverted_trains",
+"rct2.ride.nrl":"rct1.ride.steam_trains",
+"rct2.ride.nrl2":"rct1aa.ride.steam_trains_covered",
+"rct2.ride.rapboat":"rct1.ride.river_rapids_boats",
+"rct2.ride.rcr":"rct1.ride.racing_cars",
+"rct2.ride.revcar":"rct1aa.ride.reverser_cars",
+"rct2.ride.revf1":"rct1.ride.reverse_freefall_car",
+"rct2.ride.rftboat":"rct1ll.ride.rafts",
+"rct2.ride.sfric1":"rct1aa.ride.side_friction_cars",
+"rct2.ride.skytr":"rct1.ride.swinging_lay_down_cars",
+"rct2.ride.slcfo":"rct1ll.ride.face_off_cars",
+"rct2.ride.smc1":"rct1aa.ride.steel_wild_mouse_cars",
+"rct2.ride.smono":"rct1aa.ride.suspended_monorail_trains",
+"rct2.ride.spboat":"rct1aa.ride.splash_boats",
+"rct2.ride.spcar":"rct1.ride.sports_cars",
+"rct2.ride.steep1":"rct1.ride.horses",
+"rct2.ride.steep2":"rct1.ride.motorbikes",
+"rct2.ride.thcar":"rct1ll.ride.air_powered_trains",
+"rct2.ride.truck1":"rct1.ride.pickup_trucks",
+"rct2.ride.utcar":"rct1aa.ride.heartline_twister_cars",
+"rct2.ride.vcr":"rct1aa.ride.vintage_cars",
+"rct2.ride.vreel":"rct1aa.ride.virginia_reel_tubs",
+"rct2.ride.wmmine":"rct1.ride.mine_cars",
+"rct2.ride.wmouse":"rct1.ride.mouse_cars"
 } as const;
 

@@ -4,10 +4,10 @@ Work out exactly how many objects of each type we actually need to replace.
 
 import { getConfigOption, getDynamicStore } from "./sharedstorage";
 import { log } from "./util/log";
-import { RideObjectDistributionType, getDistributionTypeForNonRide, ObjectDistributionTypeToAPIObjectType } from "./distributiontype";
-import { RideObjectDistributionTypes, getDistributionTypeForRide, NonRideObjectDistributionType } from "./distributiontype";
-import { forbiddenIndexes } from "./forbiddenindexes";
-import { ObjectIdentifierToInstalledObject, SupportedObjectType } from "./objectlist";
+import { RideObjectDistributionType, getDistributionTypeForNonRide, ObjectDistributionTypeToAPIObjectType } from "./distributiontypepools";
+import { RideObjectDistributionTypes, getDistributionTypeForRide, NonRideObjectDistributionType } from "./distributiontypepools";
+import { forbiddenIndexes } from "./objectsinpark";
+import { ObjectIdentifierToInstalledObject, SupportedObjectType } from "./installedobjectlist";
 
 export type RideObjectsRequired = Record<RideObjectDistributionType, number>;
 
@@ -37,7 +37,7 @@ export function calculateRemainingObjects()
         invented: rides.invented,
         nonResearcheable: nonResearcheable,
     }
-    log(`Total objects to switch: ${JSON.stringify(remainingItems)}`, "info");
+    log(`Total objects to load: ${JSON.stringify(remainingItems)}`, "info");
     return true;
 }
 
@@ -49,7 +49,7 @@ function getTargetNumberOfObjects(prefix: QuantitySelectionPrefix, objType: "rid
         let minAmt = getDynamicStore(prefix + "QuantitySelectionValue", 0).get();
         if (dropdownState == 0)
         {
-            minAmt = 2147483647;
+            minAmt = 0;
         }
         if (dropdownState > 2)
         {
@@ -57,15 +57,15 @@ function getTargetNumberOfObjects(prefix: QuantitySelectionPrefix, objType: "rid
         }
         if (prefix == "Starting")
         {
-            return Math.min(minAmt, park.research.inventedItems.filter((item) => item.type == "ride").length);
+            return Math.max(minAmt, park.research.inventedItems.filter((item) => item.type == "ride").length);
         }
         else if (prefix == "Researchable")
         {
-            return Math.min(minAmt, park.research.uninventedItems.filter((item) => item.type == "ride").length);
+            return Math.max(minAmt, park.research.uninventedItems.filter((item) => item.type == "ride").length);
         }
         if (objType == "ride")
         {
-            return Math.min(minAmt, objectManager.getAllObjects("ride").length);
+            return Math.max(minAmt, objectManager.getAllObjects("ride").length);
         }
         let objectsByAPIType = objectManager.getAllObjects(ObjectDistributionTypeToAPIObjectType[objType]);
         let filter = function(obj: LoadedObject)
@@ -74,7 +74,7 @@ function getTargetNumberOfObjects(prefix: QuantitySelectionPrefix, objType: "rid
             return thisDist == objType;
         }
         let matchingQty = objectsByAPIType.filter(filter).length;
-        return Math.min(minAmt, matchingQty);
+        return Math.max(minAmt, matchingQty);
     }
     else
     {
@@ -222,7 +222,14 @@ function calculateRemainingRides(): RequestedRides
         let forbiddenRideType = getDistributionTypeForRide(ObjectIdentifierToInstalledObject[forbiddenRideIdentifier]);
         if (forbiddenRideType !== null)
         {
-            uninvented[forbiddenRideType] = Math.max(0, uninvented[forbiddenRideType]-1);
+            if (invented[forbiddenRideType] > 0)
+            {
+                invented[forbiddenRideType] = Math.max(0, invented[forbiddenRideType]-1);
+            }
+            else
+            {
+                uninvented[forbiddenRideType] = Math.max(0, uninvented[forbiddenRideType]-1);
+            }
         }
     }
 

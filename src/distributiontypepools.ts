@@ -7,9 +7,12 @@
     and handle indexes which makes it seem like getting rid of this is probably impossible.
 */
 
-import { ObjectIdentifierToInstalledObject } from "./objectlist";
+import { ObjectAssociations } from "./objectassociation";
+import { ObjectIdentifierToInstalledObject } from "./installedobjectlist";
 import { PregeneratedIdentifierToRideResearchCategory } from "./standardobjectlist";
 import { log } from "./util/log";
+import { randomiserProgressText } from "./mainworker";
+import { StringTable, formatTokens } from "./util/strings";
 
 export const RideObjectDistributionTypes = ["transport", "gentle", "thrill", "water", "rollercoaster", "foodstall", "drinkstall", "otherstall"] as const;
 export type RideObjectDistributionType = typeof RideObjectDistributionTypes[number];
@@ -18,6 +21,7 @@ export const NonRideObjectDistributionTypes = ["bin", "lamp", "bench", "park_ent
 export type NonRideObjectDistributionType = typeof NonRideObjectDistributionTypes[number];
 
 export type ObjectDistributionType = RideObjectDistributionType | NonRideObjectDistributionType;
+export const ObjectDistributionTypes: ObjectDistributionType[] = ["transport", "gentle", "thrill", "water", "rollercoaster", "foodstall", "drinkstall", "otherstall", "bin", "lamp", "bench", "park_entrance", "nonqueue_surface", "queue_surface", "footpath_railings"] as const;
 
 const ShopItemToStallType: Record<number, RideObjectDistributionType> = {
     0:"otherstall",// Balloon
@@ -72,7 +76,8 @@ const ShopItemToStallType: Record<number, RideObjectDistributionType> = {
     52:"foodstall", // RoastSausage,
     // EmptyBowlBlue,
     255:"otherstall" // None
-}
+} as const;
+
 
 // It seems bonkers that only way I can see to get what kind of ride a RideObject is
 // is to load it and see what kind of RideResearchItem gets added to park.research.inventedItems
@@ -82,10 +87,12 @@ let loadDistributionTypesWorkingList: string[] = [];
 // Unsurprisingly, repeatedly loading/unloading objects isn't fast and we have to do it pretty slowly
 const RIDE_DISTRIBUTION_TYPES_TO_CHECK_PER_TICK = 2;
 
+export let RideTypeToStallIdentifiers: Record<number, string[]> = {};
+
 // We have to save them, but this is useful anyway for the non-rides
-export const ObjectIdentifierToRideDistributionType: Record<string, RideObjectDistributionType> = {};
+export let ObjectIdentifierToRideDistributionType: Record<string, RideObjectDistributionType> = {};
 // I will still need to maintain this lookup even if the plugin API is improved though
-export const ObjectPoolByDistributionType: Record<ObjectDistributionType, string[]> =
+export let ObjectPoolByDistributionType: Record<ObjectDistributionType, string[]> =
 {
     bench:[],
     bin:[],
@@ -144,6 +151,7 @@ export function loadDistributionTypesForAllRides()
         if (objectsLoadedThisTick > RIDE_DISTRIBUTION_TYPES_TO_CHECK_PER_TICK)
         {
             log(`Load ride distribution types: ${loadDistributionTypesWorkingList.length} items left`, "info");
+            randomiserProgressText.set(formatTokens(StringTable.RIDE_DISTRIBUTION_TYPES_PROGRESS, String(loadDistributionTypesWorkingList.length)));
             return false;
         }
     }
@@ -152,21 +160,31 @@ export function loadDistributionTypesForAllRides()
 
 export function clearDistributionTypes()
 {
-    for (const key in Object.keys(ObjectIdentifierToRideDistributionType))
-    {
-        delete ObjectIdentifierToRideDistributionType[key];
-    }
-    for (const key of Object.keys(ObjectPoolByDistributionType))
-    {
-        let typedKey = key as ObjectDistributionType;
-        ObjectPoolByDistributionType[typedKey].splice(0, ObjectPoolByDistributionType[typedKey].length);
-    }
+    ObjectIdentifierToRideDistributionType = {};
+    ObjectPoolByDistributionType = {
+        bench:[],
+        bin:[],
+        drinkstall:[],
+        foodstall:[],
+        footpath_railings:[],
+        queue_surface:[],
+        nonqueue_surface: [],
+        gentle:[],
+        lamp:[],
+        otherstall:[],
+        park_entrance:[],
+        rollercoaster:[],
+        thrill:[],
+        transport:[],
+        water:[],
+    };
+    RideTypeToStallIdentifiers = {};
     return true;
 }
 
 var checkedLoadedObjectDistributions = false;
 
-function logDistributionTypeFromResearchItem(obj: RideResearchItem, isScenarioDefaultObject: boolean)
+function logDistributionTypeFromResearchItem(obj: RideResearchItem)
 {
     let rideObj = objectManager.getObject("ride", obj.object);
     if (rideObj === null)
@@ -187,20 +205,18 @@ function logDistributionTypeFromResearchItem(obj: RideResearchItem, isScenarioDe
         {
             category = shopItemCategory;
         }
+        if (RideTypeToStallIdentifiers[obj.rideType] === undefined)
+            RideTypeToStallIdentifiers[obj.rideType] = [];
+        RideTypeToStallIdentifiers[obj.rideType].push(rideObj.identifier);
     }
     else
     {
         category = obj.category;
     }
     //log(`Dist type for ${rideObj.identifier} = ${category}`, "info");
-    // Scenario default objects don't go into the pool, because they are already loaded
-    // If we replace them, we can add them back to the pool later
-    if (!isScenarioDefaultObject)
-    {
-        ObjectPoolByDistributionType[category].push(rideObj.identifier);
-    }
-    ObjectIdentifierToRideDistributionType[rideObj.identifier] = category;
-    
+    let newKey = `${rideObj.identifier}`;
+    ObjectIdentifierToRideDistributionType[newKey] = category;
+    addIdentifierToDistributionPool(newKey);
 }
 
 function findDistributionTypesForAllCurrentlyLoadedRides()
@@ -213,7 +229,7 @@ function findDistributionTypesForAllCurrentlyLoadedRides()
         {
             if (obj.type == "ride")
             {
-                logDistributionTypeFromResearchItem(obj, true);
+                logDistributionTypeFromResearchItem(obj);
             }
         }
         log(`Finished distribution types for loaded items`, "info");
@@ -245,6 +261,7 @@ export function getDistributionTypeForRide(obj: InstalledObject): RideObjectDist
     if (pregeneratedCategory !== undefined && pregeneratedCategory != "shop")
     {
         ObjectIdentifierToRideDistributionType[obj.identifier] = pregeneratedCategory;
+        addIdentifierToDistributionPool(obj.identifier);
         return pregeneratedCategory;
     }
     log(`Loading ${obj.identifier} to get its research item type...`, "info");
@@ -255,30 +272,40 @@ export function getDistributionTypeForRide(obj: InstalledObject): RideObjectDist
         log(`Tried to load ${obj.identifier} to get its research item type, but the load failed`, "error");
         return null;
     }
-    // This SHOULD put it at the end of discovered items, but we can't necessarily assume that
-    let searchIndex = park.research.inventedItems.length - 1;
-    while (searchIndex >= 0)
+    // This normally loads things as invented items.
+    // I don't know why, but the attempts to load random objects come uninvented instead - and that's a bit worrying
+    for (let listIndex=0; listIndex<2; listIndex++)
     {
-        let researchItem = park.research.inventedItems[searchIndex];
-        if (researchItem.type == "ride" && researchItem.object == loadReturn.index)
+        let thisList: "inventedItems" | "uninventedItems" = listIndex == 0 ? "inventedItems" : "uninventedItems";
+        // This SHOULD put it at the end of discovered items, but we can't necessarily assume that
+        let searchIndex = park.research[thisList].length - 1;
+        while (searchIndex >= 0)
         {
-            logDistributionTypeFromResearchItem(researchItem, false);
-            break;
+            
+            let researchItem = park.research[thisList][searchIndex];
+            if (researchItem.type == "ride")
+            {
+                if (researchItem.object == loadReturn.index)
+                {
+                    logDistributionTypeFromResearchItem(researchItem);
+                    break;
+                }
+            }
+            searchIndex--;
         }
-        searchIndex--;
+        if (searchIndex < 0)
+        {
+            continue;
+        }
+        objectManager.unload(obj.identifier);
+        // We also have to remove it from invented items, or the invented items list gets messed up
+        // - the added entires are not removed at unload, and we end up with a ton of research items
+        //  for different ride types all pointing at the index we are repeatedly loading every object in the game into
+        park.research[thisList] = park.research[thisList].filter((obj) => {return !(obj.object == loadReturn.index && obj.type=="ride")});
+        return ObjectIdentifierToRideDistributionType[obj.identifier];
     }
-    if (searchIndex < 0)
-    {
-        log(`Tried to load ${obj.identifier} to get its research item type, but didn't find it in the list of invented items`, "error");
-        return null;
-    }
-    //log(`Found loaded object at index ${searchIndex}`, "info");
-    objectManager.unload(obj.identifier);
-    // We also have to remove it from invented items, or the invented items list gets messed up
-    // - the added entires are not removed at unload, and we end up with a ton of research items
-    //  for different ride types all pointing at the index we are repeatedly loading every object in the game into
-    park.research.inventedItems = park.research.inventedItems.filter((obj) => {return obj.object != loadReturn.index});
-    return ObjectIdentifierToRideDistributionType[obj.identifier];
+    log(`Tried to load ${obj.identifier} to get its research item type, but didn't find it in either research list`, "error");
+    return null;
 }
 
 // Non-ride stuff below here:
@@ -342,31 +369,11 @@ export function loadDistributionTypesForAllNonRides()
     let listForThisTick = loadDistributionTypesWorkingList.splice(0, NON_RIDE_DISTRIBUTION_TYPES_TO_CHECK_PER_TICK);
     for (const ident of listForThisTick)
     {
-        let obj = ObjectIdentifierToInstalledObject[ident];
-        let distType = getDistributionTypeForNonRide(obj);
-        if (distType !== null)
-        {
-            ObjectPoolByDistributionType[distType].push(obj.identifier);
-        }
+        addIdentifierToDistributionPool(ident);
     }
     log(`Load non-ride distribution types: ${loadDistributionTypesWorkingList.length} items left`, "info");
     if (loadDistributionTypesWorkingList.length == 0)
     {
-        // Remove all the currently loaded ones from the object pool
-        const typesToCheck: ObjectType[] = ["footpath_addition", "park_entrance", "footpath_surface", "footpath_railings"];
-        for (const thisType of typesToCheck)
-        {
-            let loaded = objectManager.getAllObjects(thisType);
-            for (const loadedObj of loaded)
-            {
-                let distType = getDistributionTypeForNonRide(loadedObj.installedObject);
-                if (distType !== null)
-                {
-                    let indexToRemove = ObjectPoolByDistributionType[distType].indexOf(loadedObj.identifier);
-                    ObjectPoolByDistributionType[distType].splice(indexToRemove, 1);
-                }
-            }
-        }
         return true;
     }
     return false;
@@ -384,4 +391,30 @@ export function getDistributionTypeForObject(obj: InstalledObject)
         distType = getDistributionTypeForNonRide(obj);
     }
     return distType
+}
+
+export function addIdentifierToDistributionPool(identifier: string)
+{
+    let installedObject = ObjectIdentifierToInstalledObject[identifier];
+    if (installedObject !== undefined)
+    {
+        let distType = getDistributionTypeForObject(installedObject);
+        if (distType !== null)
+        {
+            let association = ObjectAssociations[identifier];
+            if (association === undefined || !association.blacklisted)
+            {
+                if (ObjectPoolByDistributionType[distType].indexOf(identifier) > -1)
+                {
+                    // This is okay. I start out with everything nonblacklisted being in a pool, and then unload everything that's in the
+                    // scenario by default - which promptly tries to add it again
+                    // The important thing is that this doesn't get to succeed
+                }
+                else
+                {
+                    ObjectPoolByDistributionType[distType].push(identifier);
+                }
+            }
+        }
+    }
 }

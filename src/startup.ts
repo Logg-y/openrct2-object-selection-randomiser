@@ -1,11 +1,19 @@
+import { randomiserUpdateHook } from "./mainworker";
+import { UIRandomiserInProgress } from "./uirunning";
 import { UISettings } from "./uisettings";
 import { StringTable } from "./util/strings";
 
 function onClickMenuItem()
 {
-	UISettings();
+	if (randomiserUpdateHook === undefined)
+	{
+		UISettings();
+	}
+	else
+	{
+		UIRandomiserInProgress();
+	}
 }
-
 
 export function startup()
 {

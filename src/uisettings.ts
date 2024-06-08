@@ -6,7 +6,8 @@ import { pluginVersion } from "./util/pluginversion";
 import { StringTable, formatTokens } from "./util/strings";
 import { storedCheckbox, getNonpersistentStore, messageBox, yesNoBox } from "./util/uiinclude";
 import { tab, tabwindow, label, groupbox, horizontal, button, dropdown, twoway, SpinnerParams, TwoWayBinding, spinner, WritableStore, ElementVisibility, vertical } from "openrct2-flexui";
-import { RideObjectDistributionTypes, RideObjectDistributionType } from "./distributiontype";
+import { RideObjectDistributionTypes, RideObjectDistributionType } from "./distributiontypepools";
+import { UIRandomiserInProgress } from "./uirunning";
 
 const SourceGameToPromptString: Record<ObjectSourceGame, string> =
 {
@@ -177,7 +178,7 @@ function sourcePreferenceWidget(params: SourcePreferenceWidgetParams)
                 width: 14,
                 onClick: () => messageBox(
                     {
-                        text: StringTable.SOURCE_PREFERENCE_EXTHELP,
+                        text: [StringTable.SOURCE_PREFERENCE_EXTHELP, StringTable.SOURCE_PREFERENCE_EXTHELP2],
                         height: 200,
                     }),
             })
@@ -266,7 +267,6 @@ function objectDistributionWidget(params: ObjectDistributionWidgetParams)
                 selectedIndex: twoway(dropdownStore),
                 onChange: dropdownChange,
                 }),
-                /*
                 button({
                     text: "?",
                     border: true,
@@ -274,11 +274,10 @@ function objectDistributionWidget(params: ObjectDistributionWidgetParams)
                     width: 14,
                     onClick: () => messageBox(
                         {
-                            text: StringTable.SOURCE_PREFERENCE_EXTHELP,
+                            text: StringTable.OBJECT_DISTRIBUTION_EXTHELP,
                             height: 200,
                         }),
                 })
-                */
             ]
     })];
     let spinners = [];
@@ -294,7 +293,7 @@ function objectDistributionWidget(params: ObjectDistributionWidgetParams)
             prompt: ObjectDistributionTypeToPromptString[category],
             visibility: getNonpersistentStore<ElementVisibility>(params.storeprefix+"ObjectDistributionSpinnerDisabled"+category, "none"),
         }))
-        if (spinners.length >= 4)
+        if (spinners.length >= 3)
         {
             content.push(horizontal({content: spinners}));
             spinners = [];
@@ -302,7 +301,7 @@ function objectDistributionWidget(params: ObjectDistributionWidgetParams)
     }
     if (spinners.length > 0)
     {
-        let extraItems = 4 - spinners.length;
+        let extraItems = 3 - spinners.length;
         while (extraItems > 0)
         {
             spinners.push(label({text:""}));
@@ -377,11 +376,6 @@ const MainTab = [
         objectTypeString:"",
         includeGlobal:false
     }),
-    quantitySelectionWidget({
-        storeprefix:"Starting",
-        prompt: StringTable.QUANTITY_SELECTION_STARTING,
-        defaultvalue: 50,
-    }),
     /*
     objectDistributionWidget({
         storeprefix:"Starting",
@@ -390,21 +384,36 @@ const MainTab = [
         includeGlobal:true,
     }),
     */
-    
+    storedCheckbox({
+        storekey: "AssociationRuleBlacklistCompatibilityObjects",
+        defaultvalue: 1,
+        prompt: StringTable.DISALLOW_COMPATIBILITY_OBJECTS,
+        tooltip: StringTable.DISALLOW_COMPATIBILITY_OBJECTS_TOOLTIP,
+    }),
     button(
     {
         text:StringTable.RUN,
         onClick: ()=>
         {
-            randomise();
+            if (randomise())
+            {
+                UISettingsTemplate.close();
+                UIRandomiserInProgress();
+            }
         },
-        height:30,
+        height:25,
     }
    )
 ]
 
+
 const ResearchTab = [
     label({text:StringTable.TITLE_RESEARCH_SETTINGS}),
+    quantitySelectionWidget({
+        storeprefix:"Starting",
+        prompt: StringTable.QUANTITY_SELECTION_STARTING,
+        defaultvalue: 30,
+    }),
     quantitySelectionWidget({
         storeprefix:"Researchable",
         prompt: StringTable.QUANTITY_SELECTION_RESEARCH,
@@ -417,6 +426,9 @@ const ResearchTab = [
         objectTypeString:StringTable.RESEARCHABLE_OBJECTS,
         includeGlobal:true}),
     */
+   // Before I experienced the world of scenery research not updating the palette, I intended to be able to mess with these
+   // Now, I'm not sure it's safe to do so, and I'm not sure how many people would find it very fun to have some of these things taken away from you
+   /*
     groupbox({
         content: [
             storedCheckbox({
@@ -447,6 +459,7 @@ const ResearchTab = [
         ],
         text: StringTable.STARTING_SCENERY_RESEARCH_TITLE,
     })
+    */
 ]
 
 interface FirstAvailabilityWidgetOptions
@@ -454,18 +467,17 @@ interface FirstAvailabilityWidgetOptions
     dropdownkey: ConfigOptionNumber,
     spinnerkey: ConfigOptionNumber,
     objectTypeName: string,
-
 }
 
 function ridesTabFirstAvailability(params: FirstAvailabilityWidgetOptions)
 {
-    let dropdownItems = [StringTable.FIRST_AVAILABILITY_MIMIC_SCENARIO, StringTable.FIRST_AVAILABILITY_EARLY, StringTable.FIRST_AVAILABILITY_RANDOM];
+    let dropdownItems = [StringTable.FIRST_AVAILABILITY_MIMIC_SCENARIO, StringTable.FIRST_AVAILABILITY_MIMIC_SCENARIO_IF_AVAILABLE, StringTable.FIRST_AVAILABILITY_DISCOVERED, StringTable.FIRST_AVAILABILITY_EARLY, StringTable.FIRST_AVAILABILITY_RANDOM, StringTable.FIRST_AVAILABILITY_NEVER];
     let dropdownStore = getStaticStore(params.dropdownkey, 0);
 
     let spinnerVisibilty = getNonpersistentStore<ElementVisibility>("FirstAvailabilitySpinnerVisibility" + params.objectTypeName, "none");
     let dropdownChange = (val: number) =>
     {
-        let visible = val == 1;
+        let visible = val == 3;
         let state: ElementVisibility = visible ? "visible" : "none";
         spinnerVisibilty.set(state);
     }
@@ -519,6 +531,12 @@ const RidesTab = [
         prompt: StringTable.REPLACE_STALLS,
         tooltip: StringTable.REPLACE_OBJECT_TOOLTIP,
         defaultvalue: 1
+    }),
+    storedCheckbox({
+        storekey: "AssociationRulePreventRideAndVehicleClassicDuplication",
+        defaultvalue: 1,
+        prompt: StringTable.DISALLOW_CLASSIC_VEHICLE_DUPLICATION,
+        tooltip: StringTable.DISALLOW_CLASSIC_VEHICLE_DUPLICATION_TOOLTIP,
     }),
     ridesTabFirstAvailability({
         dropdownkey: "FoodStallAvailabilityCategory",
@@ -645,6 +663,30 @@ const FootpathSurfaceTab = [
         tooltip: StringTable.REPLACE_OBJECT_TOOLTIP,
         defaultvalue: 1
     }),
+    storedCheckbox({
+        storekey: "AssociationRulePreventPathStairAndSlopeVariants",
+        prompt: StringTable.DISALLOW_BOTH_SLOPED_AND_STAIRS,
+        tooltip: StringTable.DISALLOW_BOTH_SLOPED_AND_STAIRS_TOOLTIP,
+        defaultvalue: 1
+    }),
+    storedCheckbox({
+        storekey: "AssociationRulePreventPathSquareAndRoundedVariants",
+        prompt: StringTable.DISALLOW_BOTH_ROUNDED_AND_SQUARE,
+        tooltip: StringTable.DISALLOW_BOTH_ROUNDED_AND_SQUARE_TOOLTIP,
+        defaultvalue: 1
+    }),
+    storedCheckbox({
+        storekey: "AssociationRuleBlacklistEditorOnlyPath",
+        prompt: StringTable.DISALLOW_EDITOR_PATH,
+        tooltip: StringTable.DISALLOW_EDITOR_PATH_TOOLTIP,
+        defaultvalue: 1
+    }),
+    storedCheckbox({
+        storekey: "AssociationRuleBlacklistInvisiblePath",
+        prompt: StringTable.DISALLOW_INVISIBLE_PATH,
+        tooltip: StringTable.DISALLOW_INVISIBLE_PATH_TOOLTIP,
+        defaultvalue: 1
+    }),
 ]
 
 const FootpathSupportsTab = [
@@ -695,6 +737,7 @@ interface PathAttachmentOneOffParams
     spinnerkey: ConfigOptionNumber,
 }
 
+//@ts-ignore suppress unused function warning
 function pathAttachmentOneOff(params: PathAttachmentOneOffParams)
 {
     let dropdownItems = [StringTable.QUANTITY_SELECTION_SCENARIO_DEFAULT, StringTable.PATH_ATTACHMENT_ONE_OFF_ALWAYS_AVAILABLE, StringTable.PATH_ATTACHMENT_ONE_OFF_RANDOM_CHANCE, StringTable.PATH_ATTACHMENT_ONE_OFF_RANDOM_CHANCE_IF_UNAVAILABLE];
@@ -774,6 +817,8 @@ const PathAttachmentTab = [
         tooltip: StringTable.REPLACE_OBJECT_TOOLTIP,
         defaultvalue: 1,
     }),
+    // Even if I load these, the palette issue means they don't show up :(
+    /*
     pathAttachmentOneOff({
         dropdownkey: "QueueTVAvailabilityCategory",
         spinnerkey: "QueueTVAvailabilityChance",
@@ -789,12 +834,13 @@ const PathAttachmentTab = [
         spinnerkey: "JumpingSnowballsAvailabilityChance",
         objectTypeName: StringTable.JUMPING_SNOWBALLS,
     }), 
+    */
 ]
 
 const UISettingsTemplate = tabwindow(
 {
    title: `${StringTable.PLUGIN_NAME} v${pluginVersion}`,
-   width: {value: 750, max: 10000},
+   width: {value: 600, max: 10000},
    height: {value: 500, max: 10000},
    padding: 5,
    tabs: [

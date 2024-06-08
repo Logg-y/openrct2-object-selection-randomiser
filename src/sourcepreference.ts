@@ -2,8 +2,8 @@
 Handle the user set game source preferences and provide practical functions for working with them.
 */
 
-import { ObjectDistributionType, ObjectDistributionTypeToAPIObjectType, ObjectPoolByDistributionType } from "./distributiontype";
-import { ObjectIdentifierToInstalledObject } from "./objectlist";
+import { ObjectDistributionType, ObjectDistributionTypeToAPIObjectType, ObjectPoolByDistributionType } from "./distributiontypepools";
+import { ObjectIdentifierToInstalledObject } from "./installedobjectlist";
 import { getDynamicStore } from "./sharedstorage";
 import { log } from "./util/log";
 
@@ -71,7 +71,7 @@ function getSourcePreferenceForObjectType(objType: SourcePreferenceKey)
         log(`No handling for source preference selection ${dropdownIndex}, revert to global`, "error");
         retval = getSourcePreferenceForObjectType("global");
     }
-    log(`Source preference for ${objType}: ${JSON.stringify(retval)}`, "info");
+    log(`Source preference for ${objType}: ${JSON.stringify(retval)}`, "sourcepreference");
     SavedSourcePreferences[objType] = retval;
     return retval;
 }
@@ -201,7 +201,7 @@ function getAllowedGameSources(pref: SourcePreference, mostpermissible=false): A
     return obj as AllowedGameSources;
 }
 
-export function pickRandomIdentifierRespectingSourcePreferences(objType: ObjectDistributionType)
+export function pickRandomIdentifierRespectingSourcePreferences(objType: ObjectDistributionType): string | undefined
 {
     let apiObjectType = ObjectDistributionTypeToAPIObjectType[objType];
     let objectPool = ObjectPoolByDistributionType[objType];
