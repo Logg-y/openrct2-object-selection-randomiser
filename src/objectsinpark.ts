@@ -181,6 +181,10 @@ export function findForbiddenIndexes()
             }
         }
     }
+    if (!getConfigOption("RandomiseParkEntrance"))
+    {
+        pushIfNotPresent(indexesPresentInWorld["park_entrance"], 0);
+    }
     return true;
 }
 
