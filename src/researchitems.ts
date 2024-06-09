@@ -362,7 +362,7 @@ export function processResearchQueue()
                 }
                 else
                 {
-                    if (adjustStallResearchTime(stallType, current, required, strictRequestTimes))
+                    if (adjustStallResearchTime(stallType, availability, timeConstraints, strictRequestTimes))
                     {
                         restartLoop = true;
                         break;
@@ -446,14 +446,17 @@ function moveNthUninventedStallToInvented(n: number)
     }
 }
 
-function adjustStallResearchTime(stallType: StallType, currentAvailability: StallAvailability, requirement: StallAvailability, strictRequestTimes: Record<number, StallType>)
+function adjustStallResearchTime(stallType: StallType, currentAvailability: StallAvailabilities, requirement: StallAvailabilities, strictRequestTimes: Record<number, StallType>)
 {
-    if (requirement.time !== undefined && currentAvailability.time !== undefined)
+    if (requirement[stallType].time !== undefined && currentAvailability[stallType].time !== undefined)
     {
+        let requirementTime = requirement[stallType].time as number;
+        let currentTime = currentAvailability[stallType].time as number;
         // If strict, all stalls of this type must be in uninvented if time > 0
-        if (requirement.strict)
+        if (requirement[stallType].strict)
         {
-            if (requirement.time >= 0)
+            
+            if (requirementTime >= 0)
             {
                 let movedStall = true;
                 let i = 0;
@@ -488,12 +491,12 @@ function adjustStallResearchTime(stallType: StallType, currentAvailability: Stal
                     return false;
                 }
             }
-            if (requirement.time !== currentAvailability.time)
+            if (requirementTime !== currentTime)
             {
-                if (requirement.time >= 0)
+                if (requirementTime >= 0)
                 {
-                    log(`Swap current availability ${currentAvailability.time} to requirement ${requirement.time} because it is strict`, "stallresearch")
-                    if (swapStallResearchOrders(requirement.time, currentAvailability.time))
+                    log(`Swap current availability ${currentTime} to requirement ${requirementTime} because it is strict`, "stallresearch")
+                    if (swapStallResearchOrders(requirementTime, currentTime))
                     {
                         return true;
                     }
@@ -501,33 +504,55 @@ function adjustStallResearchTime(stallType: StallType, currentAvailability: Stal
                 }
                 else
                 {
-                    log(`Set current availability ${currentAvailability.time} to researched to meet strict requirement ${requirement.time}`, "stallresearch")
-                    moveNthUninventedStallToInvented(currentAvailability.time);
+                    log(`Set current availability ${currentTime} to researched to meet strict requirement ${requirementTime}`, "stallresearch")
+                    moveNthUninventedStallToInvented(currentTime);
                     return true;
                 }
             }
         }
-        else if (currentAvailability.time > requirement.time)
+        else if (currentTime > requirementTime)
         {
-            let targetIndex = currentAvailability.time;
+            let targetIndex = requirementTime;
             while (targetIndex >= 0)
             {
-                targetIndex--;
-                if (strictRequestTimes[targetIndex] == undefined || targetIndex < 0)
+                // Can always move to initially discovered safely
+                if (targetIndex < 0)
                 {
                     break;
                 }
+                // Can't swap with anything else that is currently at its requirement
+                // otherwise this can develop into an endless loop of swapping two stalls with each other as they fight to meet their requirement
+                let indexIsValid = true;
+                for (const otherStallType of StallTypes)
+                {
+                    let otherRequirement = requirement[otherStallType].time;
+                    let otherCurrent = currentAvailability[otherStallType].time;
+                    if (otherCurrent == targetIndex)
+                    {
+                        if (otherRequirement !== undefined && otherStallType != stallType && otherRequirement < currentTime)
+                        {
+                            indexIsValid = false;
+                            log(`Can't swap to ${targetIndex}: would make ${otherStallType} fail its target time`, "stallresearch");
+                            break;
+                        }
+                    }
+                }
+                if (indexIsValid && strictRequestTimes[targetIndex] == undefined)
+                {
+                    break;
+                }
+                targetIndex--;
             }
             if (targetIndex < 0)
             {
-                log(`Move ${currentAvailability.time} to researched to get below requirement of ${requirement.time}`, "stallresearch");
-                moveNthUninventedStallToInvented(currentAvailability.time);
+                log(`Move ${currentTime} to researched to get below requirement of ${requirementTime}`, "stallresearch");
+                moveNthUninventedStallToInvented(currentTime);
                 return true;
             }
             else
             {
-                log(`Swap ${currentAvailability.time} and ${targetIndex} to get the first below requirement of ${requirement.time}`, "stallresearch");
-                if (swapStallResearchOrders(currentAvailability.time, targetIndex))
+                log(`Swap ${currentTime} and ${targetIndex} to get the first below requirement of ${requirementTime}`, "stallresearch");
+                if (swapStallResearchOrders(currentTime, targetIndex))
                 {
                     return true;
                 }
