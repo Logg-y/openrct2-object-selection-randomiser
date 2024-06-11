@@ -22,7 +22,11 @@ export function handleUnloadingIdentifier(identifier: string)
     {
         addIdentifierToDistributionPool(existingObject.identifier);
     }
-    loadedIdentifiers.splice(loadedIdentifiers.indexOf(identifier), 1);
+    let loadedIdentifierIndex = loadedIdentifiers.indexOf(identifier);
+    if (loadedIdentifierIndex > -1)
+    {
+        loadedIdentifiers.splice(loadedIdentifierIndex, 1);
+    }
     if (association !== undefined)
     {
         for (const cannotCoexistWithIdentifier of association.cannotCoexistWith)
