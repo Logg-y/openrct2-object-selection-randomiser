@@ -21,6 +21,18 @@ Currently I do not support scenery besides bins/lamps/benches. This is mostly be
 
 I set this up in a way that would make configuring a manual blacklist and associations of objects that should never coexist possible, there's just no way to specify these at the moment. That could change, but it would probably be quite a complicated interface and I am not sure how worthwhile it would be to make at the moment.
 
+# Installation and Usage
+
+As with all OpenRCT2 plugins, scroll up to the top of the page, find the "Releases" section, and download the latest. Copy this to your OpenRCT2 plugin directory, which is:
+
+- Windows: `C:\Users\YourName\Documents\OpenRCT2`
+- Mac: `/Users/YourName/Library/Application Support/OpenRCT2`
+- Linux: `$XDG_CONFIG_HOME/OpenRCT2` or in its absence `$HOME/.config/OpenRCT2`
+
+If you had the game open, you will need to quit and relaunch it.
+
+If everything went well, this plugin's entry will appear under the map button dropdown once playing a scenario.
+
 # Thanks
 
 - This is built on Basssiiie's [Typescript plugin template](https://github.com/Basssiiie/OpenRCT2-Simple-Typescript-Template), which was an incredibly useful starting point as this is almost the first thing I've ever had to do with Javascript/Typescript at all and having simple instructions to follow for a hot-reloading setup was amazing.
