@@ -144,6 +144,7 @@ export const StringTable = {
     DRINK_STALL: "Drink stall",
     TOILETS: "Toilets",
     CASH_MACHINE: "Cash machine",
+    INFO_KIOSK: "Information kiosk",
 
     UI_ENTER_NUMERIC_VALUE_PROMPT: "Enter a numeric value: ",
     UI_MAX: "Max: ",

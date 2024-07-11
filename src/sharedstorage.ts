@@ -44,11 +44,13 @@ const numberOptions =
     "ToiletAvailabilityCategory",
     "CashMachineAvailabilityCategory",
     "FirstAidAvailabilityCategory",
+    "InfoKioskAvailabilityCategory",
     "FoodStallAvailabilityEarliness",
     "DrinkStallAvailabilityEarliness",
     "ToiletAvailabilityEarliness",
     "CashMachineAvailabilityEarliness",
     "FirstAidAvailabilityEarliness",
+    "InfoKioskAvailabilityEarliness",
 
     "QueueTVAvailabilityCategory",
     "JumpingFountainsAvailabilityCategory",

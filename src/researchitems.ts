@@ -15,6 +15,7 @@ import { StringTable } from "./util/strings";
 const CASH_MACHINE_RIDE_TYPE = 45 as const;
 const FIRST_AID_STALL_RIDE_TYPE = 48 as const;
 const TOILET_RIDE_TYPE = 36 as const;
+const INFO_KIOSK_RIDE_TYPE = 35 as const;
 
 export function setRideIndexResearchState(rideIndex: number, researched: boolean)
 {
@@ -83,7 +84,7 @@ export function removeResearchItemsForRide(rideIndex: number)
     }
 }
 
-const StallTypes = ["foodstall", "drinkstall", "toilets", "first_aid", "cash_machine"] as const;
+const StallTypes = ["foodstall", "drinkstall", "toilets", "first_aid", "cash_machine", "info_kiosk"] as const;
 export type StallType = typeof StallTypes[number];
 
 type StallAvailabilities = Record<StallType, StallAvailability>;
@@ -101,6 +102,7 @@ const ScenarioInitialStallAvailability: StallAvailabilities =
     "toilets":{strict:false, time:undefined},
     "first_aid":{strict:false, time:undefined},
     "cash_machine":{strict:false, time:undefined},
+    "info_kiosk":{strict:false, time:undefined},
 }
 
 export function getInitialStallAvailability()
@@ -125,6 +127,7 @@ function getCurrentStallAvailability(): StallAvailabilities
         "toilets":{strict:false, time:undefined},
         "first_aid":{strict:false, time:undefined},
         "cash_machine":{strict:false, time:undefined},
+        "info_kiosk":{strict:false, time:undefined},
     }
     let currentTime = -1;
     for (let iter=0; iter<2; iter++)
@@ -208,6 +211,7 @@ function getRequestedStallTimeConstraints(): StallAvailabilities
         foodstall: getOneStallTimeConstraint("FoodStallAvailabilityCategory", "FoodStallAvailabilityEarliness", "foodstall"),
         first_aid: getOneStallTimeConstraint("FirstAidAvailabilityCategory", "FirstAidAvailabilityEarliness", "first_aid"),
         toilets: getOneStallTimeConstraint("ToiletAvailabilityCategory", "ToiletAvailabilityEarliness", "toilets"),
+        info_kiosk: getOneStallTimeConstraint("InfoKioskAvailabilityCategory", "InfoKioskAvailabilityEarliness", "info_kiosk"),
     }
 }
 
@@ -256,6 +260,7 @@ function introduceNewStallOfType(stallType: StallType)
         if (stallType == "cash_machine") rideType = CASH_MACHINE_RIDE_TYPE; 
         else if (stallType == "first_aid") rideType = FIRST_AID_STALL_RIDE_TYPE; 
         else if (stallType == "toilets") rideType = TOILET_RIDE_TYPE;
+        else if (stallType == "info_kiosk") rideType = INFO_KIOSK_RIDE_TYPE;
         if (rideType !== undefined)
         {
             identifier = RideTypeToStallIdentifiers[rideType][context.getRandom(0, RideTypeToStallIdentifiers[rideType].length)];
@@ -473,6 +478,7 @@ function adjustStallResearchTime(stallType: StallType, currentAvailability: Stal
                                 if (getDistributionTypeForRide(rideObject.installedObject) == stallType || 
                                     (stallType == "first_aid" && researchItem.rideType == FIRST_AID_STALL_RIDE_TYPE) ||
                                     (stallType == "toilets" && researchItem.rideType == TOILET_RIDE_TYPE) ||
+                                    (stallType == "info_kiosk" && researchItem.rideType == INFO_KIOSK_RIDE_TYPE) ||
                                     (stallType == "cash_machine" && researchItem.rideType == CASH_MACHINE_RIDE_TYPE))
                                 {
                                     log(`Stalltype ${stallType} wants all to be in uninvented, moving index ${researchItem.object}`, "stallresearch")
@@ -591,5 +597,7 @@ function getStallTypeForIdentifier(ident: string): StallType | undefined
         return "cash_machine"
     if (RideTypeToStallIdentifiers[FIRST_AID_STALL_RIDE_TYPE].indexOf(ident) > -1)
         return "first_aid"
+    if (RideTypeToStallIdentifiers[INFO_KIOSK_RIDE_TYPE].indexOf(ident) > -1)
+        return "info_kiosk"
     return undefined;
 }

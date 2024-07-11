@@ -564,6 +564,11 @@ const RidesTab = [
         spinnerkey: "FirstAidAvailabilityEarliness",
         objectTypeName: StringTable.FIRST_AID_STALL,
     }),
+    ridesTabFirstAvailability({
+        dropdownkey: "InfoKioskAvailabilityCategory",
+        spinnerkey: "InfoKioskAvailabilityEarliness",
+        objectTypeName: StringTable.INFO_KIOSK,
+    }),
 ]
 
 
