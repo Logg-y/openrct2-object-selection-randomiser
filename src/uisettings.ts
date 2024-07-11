@@ -492,6 +492,7 @@ function ridesTabFirstAvailability(params: FirstAvailabilityWidgetOptions)
                 }),
             ]
     })];
+    callOnLoadedStores.push(()=>dropdownChange(dropdownStore.get()));
     content.push(spinnerPlusSetter({
         value: twoway(getStaticStore(params.spinnerkey, 5)),
         defaultvalue: 5,
